@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- 上述3个meta标签*必须*放在最前面，任何其他内容都*必须*跟随其后！ -->
+    <title>Test</title>
+
+    <!-- Bootstrap -->
+    <link href="lib/bootstrap-4.6.0/css/bootstrap.min.css" rel="stylesheet">
+
+    <link rel="stylesheet" href="lib/editormd/css/editormd.min.css" >
+
+    <link rel="stylesheet" href="lib/semantic.min.css">
+
+    <script src="https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js"></script>
+
+
+
+</head>
+<body>
+<h1>博客内容</h1>
+
+<div id="app">
+    <!--博客内容-->
+    <div v-html="blogContent"></div>
+
+    <form action="/comment/add" method="post" @submit.prevent="Commentsubmit" id="commentForm">
+        <input name="blogId" value="1" type="hidden"  v-model="commentData.blogId">
+        <input id="commentNickname" name="nickname" v-model="commentData.nickname">
+        <!--判断是否回复评论，若是，placeholder置为评论者昵称-->
+        <textarea id="commentText" name="content" v-model="commentData.content" :placeholder="isRely?('@'+relyNickname):''"></textarea>
+        <input type="submit" value="发布">
+    </form>
+    <!--取消回复评论，变为评论文章-->
+    <button v-show="isRely" @click="cancelRely" title="评论文章，而不再是回复某条评论">取消回复</button>
+
+    <!--评论区-->
+    <div class="ui list" id="commentDiv">
+        <div class="item" v-for="(item,index) in blogComment">
+            <span class="badge badge-primary badge-pill" >#{{index+1}}楼</span>
+            <img class="ui avatar image" :src="item.avatar!='-1'?item.avatar:'images/admin.png'">
+            <div class="content">
+                <div>
+                    <a style="color: #01a0e4 ;font-weight:bold">{{item.nickname}}:</a>
+                    <small style="float: right">&nbsp&nbsp&nbsp&nbsp 3 days ago</small>
+                </div>
+                <div class="description"><br/><b>{{item.content}}</b><a @click="reply(item.id,item.nickname)">回复</a></div>
+
+                <div class="ui list">
+                    <div class="item" v-for="(innerItem,index) in item.relyComments">
+                        <img class="ui avatar image" :src="innerItem.avatar!='-1'?innerItem.avatar:'images/user.ico'">
+                        <div class="content">
+                            <div>
+                                <a style="color: #01a0e4  ;font-weight:bold" >{{innerItem.nickname}} :</a>
+                                <!-- 如果是二级评论，则不加@，如果是多级评论，则加@xx，注：后端数据中二级评论没有parentNickname-->
+                                <i v-if="innerItem.parentNickname!=null" style="color: #00c4ff">@{{innerItem.parentNickname}}</i>
+                                <small style="float: right">&nbsp&nbsp&nbsp&nbsp 3 days ago</small>
+                            </div>
+                            <div class="description">{{innerItem.content}}<br/>
+                                <a @click="reply(innerItem.id,innerItem.nickname)" style="color: #01a0e4">回复</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+</div>
+
+
+
+
+
+<!-- jQuery (Bootstrap 的所有 JavaScript 插件都依赖 jQuery，所以必须放在前边) -->
+<script src="lib/jquery-3.5.1.min.js"></script>
+<script src="lib/jquery.params.js"></script>
+<!-- 加载 Bootstrap 的所有 JavaScript 插件。你也可以根据需要只加载单个插件。 -->
+<script src="lib/bootstrap-4.6.0/js/bootstrap.min.js"></script>
+<script src="lib/vue.js"></script>
+<script src="lib/semantic.min.js"></script>
+<script src="lib/editormd/editormd.min.js" ></script>
+<script>
+    var vue = new Vue(
+        {
+            el:"#app",
+            data:{
+                blogId:"",
+                blogContent:{},
+                blogComment:[],
+                commentData:{
+                    content:"",
+                    blogId:"1",
+                    nickname:"",
+                    parentCommentId:""
+                },
+                relyNickname:"",
+                //区别评论与回复
+                isRely:false
+
+            },
+            methods:{
+                getContent:function () {
+                    //获取博客内容
+                    $.post("/getBlog",{id:vue.blogId},function (data) {
+                        //alert(data);
+                        vue.blogContent=data;
+                    },"text");
+                },
+                getComment:function () {
+                    //获取博客评论
+                    $.post("/comment",{blogId:vue.blogId},function (data) {
+                        //alert(data);
+                        vue.blogComment=data;
+                    },"json");
+                },
+                Commentsubmit:function () {
+                    var formData = JSON.stringify(vue.commentData);
+                    //alert(formData)
+                    $.post("/comment/add",vue.commentData,function (data) {
+                        //alert(data);
+                        vue.blogComment=data;
+                        //document.getElementById("commentDiv").scrollIntoView();
+                        //jq对象转回js对象
+                        $("#commentDiv")[0].scrollIntoView();
+                    },"json");
+                    /**
+                    回复/评论完清空评论文本
+                    此处jquery清空无效
+                    * */
+                    vue.commentData.content=""
+                    vue.commentData.nickname=""
+                    //每次回复/评论完取消回复状态，变回评论状态
+                    vue.cancelRely();
+                },
+                reply:function (commentId,nickname) {
+                    vue.commentData.parentCommentId=commentId;
+                    vue.relyNickname=nickname;
+                    vue.isRely=true;
+                    $("#commentForm")[0].scrollIntoView();
+                },
+                cancelRely:function () {
+                    vue.isRely=false;
+                    vue.relyNickname='';
+                    vue.commentData.parentCommentId=''
+                }
+            }
+        }
+    )
+    vue.blogId=$.query.get("blogId")
+    vue.getContent();
+    vue.getComment();
+</script>
+
+
+</body>
+</html>

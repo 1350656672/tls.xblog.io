@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--绑定一个对应的Dao接口-->
+<mapper namespace="com.tls.xblog.dao.MessageDao">
+    <insert id="addMessage">
+        insert into messageBoard(id,nickname,content,avatar,createTime,parentId,adminComment)
+        values (null,#{nickname},#{content},#{avatar},#{createTime},#{parentId},0)
+    </insert>
+    <delete id="deleteMessage">
+        delete from messageBoard where id = #{id}
+    </delete>
+
+    <select id="findMessageHasParent" resultType="com.tls.xblog.entity.Message">
+        select * from messageBoard where parentId !=-1;
+    </select>
+    <select id="findMessageNoParent" resultType="com.tls.xblog.entity.Message">
+        select * from messageBoard where parentId = -1;
+    </select>
+</mapper>

@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--绑定一个对应的Dao接口-->
+<mapper namespace="com.tls.xblog.dao.BlogDao">
+
+    <insert id="insertBlog" parameterType="com.tls.xblog.entity.Blog">
+        insert into blog(id,content,firstPicture,title,description,typeId,complete,trash)
+        values (null,#{content},#{firstPicture},#{title},#{description},#{typeId},#{complete},0);
+    </insert>
+    <update id="updateBlog" parameterType="com.tls.xblog.entity.Blog">
+        update blog
+            set content=#{content},firstPicture=#{firstPicture},title=#{title},description=#{description},
+            typeId=#{typeId},complete=#{complete}
+            where id=#{id}
+    </update>
+    <update id="trashBlog">
+        update blog
+            set trash=1
+            where id=#{id}
+    </update>
+    <update id="restoreBlog">
+        update blog
+        set trash=0
+        where id=#{id}
+    </update>
+    <delete id="deleteBlog">
+        delete from blog where id=#{id}
+    </delete>
+
+
+    <select id="selectBlogById" resultType="com.tls.xblog.entity.Blog" >
+        select *
+        from xblog.blog
+        where id = #{id}
+    </select>
+    <select id="getBlogsByType" resultType="com.tls.xblog.entity.Blog" >
+        select id,createTime,description,firstPicture,flag,title,updateTime,views,typeId,commentCount,userId,complete
+        from xblog.blog
+        where typeId = #{id} and complete = 1 and trash = 0
+    </select>
+    <select id="getRecommendBlogs" resultMap="blogs">
+        select b.id as id,b.createTime as createTime,b.description as description,b.firstPicture as firstPicture,b.flag as flag,b.title as title,
+               b.updateTime as updateTime,b.views as views,b.typeId as typeId,b.userId as userId,b.complete as complete,b.trash as trash,count(c.id) as commentCount
+        from xblog.blog as b
+                 left join comment as c on b.id=c.blogId
+        where  b.complete = 1 and b.trash = 0
+        GROUP BY b.id
+        order by createTime
+    </select>
+
+
+    <select id="getBlogsByTags" parameterType="list" resultType="com.tls.xblog.entity.Blog">
+
+        select * from blog
+            <where>
+                and id in(
+                    select articleId  from article_tag
+                    <where>
+                        <if test="ids.size>0">
+                            tagId in
+                            <foreach collection="ids" item="id" open="(" separator="," close=")">
+                                #{id}
+                            </foreach>
+                        </if>
+                    </where>
+                    group by articleId
+                    having count(*)=${ids.size}
+                )
+                and complete = 1 and trash = 0
+            </where>
+    </select>
+
+    <select id="getUncompletedBlogs" resultType="com.tls.xblog.entity.Blog">
+        select id,createTime,description,firstPicture,flag,title,updateTime,views,typeId,commentCount,userId,complete,trash
+        from xblog.blog
+        where  complete = 0 and trash = 0
+    </select>
+    <select id="getCompletedBlogs" resultMap="blogs">
+        select b.id as id,b.createTime as createTime,b.description as description,b.firstPicture as firstPicture,b.flag as flag,b.title as title,
+               b.updateTime as updateTime,b.views as views,b.typeId as typeId,b.userId as userId,b.complete as complete,b.trash as trash,count(c.id) as commentCount
+        from xblog.blog as b
+                 left join comment as c on b.id=c.blogId
+        where  b.complete = 1 and b.trash = 0
+        GROUP BY b.id;
+
+    </select>
+
+    <select id="getTrashBlogs" resultType="com.tls.xblog.entity.Blog">
+        select id,createTime,description,firstPicture,flag,title,updateTime,views,typeId,commentCount,userId,complete,trash
+        from xblog.blog
+        where  trash = 1
+    </select>
+    <select id="selectAllBlog" resultMap="blogs">
+        select b.id as id,b.createTime as createTime,b.description as description,b.firstPicture as firstPicture,b.flag as flag,b.title as title,
+               b.updateTime as updateTime,b.views as views,b.typeId as typeId,b.userId as userId,b.complete as complete,b.trash as trash,count(c.id) as commentCount
+        from xblog.blog as b
+                 left join comment as c on b.id=c.blogId
+        GROUP BY b.id;
+    </select>
+    <select id="searchBlogs" resultType="com.tls.xblog.entity.Blog">
+        select b.id as id,b.createTime as createTime,b.content as content,b.description as description,b.firstPicture as firstPicture,b.flag as flag,b.title as title,
+               b.updateTime as updateTime,b.views as views,b.typeId as typeId,b.userId as userId,b.complete as complete,b.trash as trash,count(c.id) as commentCount
+        from xblog.blog as b
+                 left join comment as c on b.id=c.blogId
+        where  b.complete = 1 and b.trash = 0 and b.title like "%"#{searchKey}"%"
+        GROUP BY b.id
+        union DISTINCT
+            select b.id as id,b.createTime as createTime,b.content as content,b.description as description,b.firstPicture as firstPicture,b.flag as flag,b.title as title,
+                   b.updateTime as updateTime,b.views as views,b.typeId as typeId,b.userId as userId,b.complete as complete,b.trash as trash,count(c.id) as commentCount
+            from xblog.blog as b
+                     left join comment as c on b.id=c.blogId
+            where  b.complete = 1 and b.trash = 0 and b.description like "%"#{searchKey}"%"
+            GROUP BY b.id
+        union DISTINCT
+            select b.id as id,b.createTime as createTime,b.content as content,b.description as description,b.firstPicture as firstPicture,b.flag as flag,b.title as title,
+                   b.updateTime as updateTime,b.views as views,b.typeId as typeId,b.userId as userId,b.complete as complete,b.trash as trash,count(c.id) as commentCount
+            from xblog.blog as b
+                     left join comment as c on b.id=c.blogId
+            where  b.complete = 1 and b.trash = 0 and b.content like "%"#{searchKey}"%"
+            GROUP BY b.id
+    </select>
+    <resultMap id="blogs" type="com.tls.xblog.entity.Blog">
+        <result column="id" property="id"></result>
+        <result column="createTime" property="createTime"></result>
+        <result column="description" property="description"></result>
+        <result column="firstPicture" property="firstPicture"></result>
+        <result column="flag" property="flag"></result>
+        <result column="title" property="title"></result>
+        <result column="updateTime" property="updateTime"></result>
+        <result column="views" property="views"></result>
+        <result column="typeId" property="typeId"></result>
+        <result column="userId" property="userId"></result>
+        <result column="complete" property="complete"></result>
+        <result column="trash" property="trash"></result>
+        <result column="commentCount" property="commentCount"></result>
+
+    </resultMap>
+
+
+</mapper>

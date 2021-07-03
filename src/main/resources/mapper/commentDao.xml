@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--绑定一个对应的Dao接口-->
+<mapper namespace="com.tls.xblog.dao.CommentDao">
+    <insert id="addCommentsById">
+        insert into comment(blogId,parentCommentId,nickname,content,avatar,createTime) values (#{blogId},#{parentCommentId},#{nickname},#{content},#{avatar},#{createTime})
+    </insert>
+    <delete id="deleteCommentsById">
+        delete from comment where id = #{id}
+    </delete>
+    <!--Dao接口中一个对应的方法-->
+    <select id="findByBlogIdParentIdNull" resultType="com.tls.xblog.entity.Comment" parameterType="long">
+        select * from comment where blogId = #{blogId} and parentCommentId = -1
+    </select>
+    <select id="findByBlogIdAndParentId" resultType="com.tls.xblog.entity.Comment" >
+        select * from comment where blogId = #{blogId} and parentCommentId = #{parentId}
+    </select>
+
+<!--    <insert id="findByBlogIdAndParentId" resultType="com.tls.xblog.entity.Comment" >-->
+<!--        insert into blog(id,content) values (null,#{content});-->
+<!--    </insert>-->
+</mapper>

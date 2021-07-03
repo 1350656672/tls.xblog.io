@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--绑定一个对应的Dao接口-->
+<mapper namespace="com.tls.xblog.dao.TypeDao">
+    <insert id="insertType" parameterType="com.tls.xblog.entity.Type">
+        insert into type(id,name) values (null,#{name})
+    </insert>
+    <update id="updateType" parameterType="com.tls.xblog.entity.Type">
+        update type set name = #{name} where id = #{id}
+    </update>
+    <delete id="deleteType" >
+        delete from type where id=#{id}
+    </delete>
+
+    <select id="findAllTypes" resultMap="typeMapper">
+        select id,name from type ;
+    </select>
+    <resultMap id="typeMapper" type="com.tls.xblog.entity.Type">
+        <result property="id" column="id"></result>
+        <result property="name" column="name"></result>
+        <association property="count" column="id" select="findCountByType"></association>
+    </resultMap>
+    <select id="findCountByType" resultType="long">
+        select count(*) from Blog where typeId = #{id} and complete=1 and trash=0
+    </select>
+
+<!--    <insert id="findTypeById" parameterType="com.tls.xblog.entity.Blog">-->
+<!--        insert into blog(id,content) values (null,#{content});-->
+<!--    </insert>-->
+
+    <!--Dao接口中一个对应的方法-->
+    <!--<select id="findAllTypesHasBlog" resultMap="typeMapperHasBlog">
+        select
+            t.id tid,t.name tname,
+            b.id bid,b.content,b.createTime,b.description,b.firstPicture,b.flag,b.title,
+            b.updateTime,b.views,b.typeId,b.commentCount,b.userId
+        from type t,blog b
+        where  t.id = b.typeId
+    </select>
+    <select id="findTypeByIdHasBlog" resultMap="typeMapperHasBlog">
+        select
+            t.id tid,t.name tname,
+            b.id bid,b.content,b.createTime,b.description,b.firstPicture,b.flag,b.title,
+            b.updateTime,b.views,b.typeId,b.commentCount,b.userId
+        from type t,blog b
+        where t.id = #{id} and t.id = b.typeId
+    </select>
+    <resultMap id="typeMapperHasBlog" type="com.tls.xblog.entity.Type">
+        <result property="id" column="tid"></result>
+        <result property="name" column="tname"></result>
+        <collection property="blogs"  ofType="com.tls.xblog.entity.Blog">
+            <result property="id" column="bid"></result>
+            <result property="content" column="content"></result>
+            <result property="createTime" column="createTime"></result>
+            <result property="description" column="description"></result>
+            <result property="firstPicture" column="firstPicture"></result>
+            <result property="flag" column="flag"></result>
+            <result property="title" column="title"></result>
+            <result property="updateTime" column="updateTime"></result>
+            <result property="views" column="views"></result>
+            <result property="typeId" column="typeId"></result>
+            <result property="commentCount" column="commentCount"></result>
+            <result property="userId" column="userId"></result>
+        </collection>
+    </resultMap>-->
+
+    <!--<select id="findAllTypes" resultMap="typeMapper">
+        select * from type;
+    </select>
+    <resultMap id="typeMapper" type="com.tls.xblog.entity.Type">
+        <result property="id" column="id"></result>
+        <result property="name" column="name"></result>
+        <collection property="blogs"  ofType="com.tls.xblog.entity.Blog" column="id" select="findBlogByType"></collection>
+    </resultMap>
+    <select id="findBlogByType" resultType="com.tls.xblog.entity.Blog">
+        select *from Blog where typeId = #{id}
+    </select>-->
+</mapper>
